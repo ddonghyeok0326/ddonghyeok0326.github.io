@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "KHUDA 2주차 세션 정리"
-date:   2024-07-28 15:44:46 +0900
+date:   2024-07-28 21:39:46 +0900
 categories: jekyll update
 ---
 # Chapter 01
