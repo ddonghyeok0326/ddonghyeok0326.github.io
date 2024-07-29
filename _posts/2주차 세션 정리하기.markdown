@@ -102,3 +102,173 @@ categories: jekyll update
 + 데이터를 모두 가지고 있게 하기(준비해야할 일)
 + 새로운 데이터를 예측할 경우 가장 가까운 직선거리에 어떤 데이터가 있는지 살피기
 + *단점*으로 데이터가 많은 경우 사용하기 힘듦
+# chapter 02
+
+## 02-01
+
+### 들어가기
+머신러닝 알고리즘은 **지도학습**과 **비지도학습**으로 나뉨
+
+**지도학습**
++ 데이터와 정답을 **입력**과 **타깃**이라고 하고 이 둘을 **훈련 데이터**라고 함
+
++ 새로운 데이터를 예측하는데 활용
+
+**비지도학습 알고리즘**
++ 타깃(정답)없이 입력 데이터만 사용함
++ 정답을 사용하지 않으므로 무언가를 맞힐 수 없음
++ 데이터를 잘 파악하거나 변형하는데 도움이 됨
+
+※머신러닝 알고리즘의 성능을 제대로 평가하려면 훈련 데이터와 평가에 사용할 데이터가 각각 달라야 함
+
+평가에 사용하는 데이터 : **테스트 세트** 
+
+훈련에 사용하는 데이터 : **훈련 세트**
+
+**샘플링 편향** : 훈련 세트와 테스트 세트에 샘플(하나의 생선 데이터)이 골고루 섞여 있지 않으면 샘플링이 한쪽으로 치우졌다는 의미
+
+**넘파이** : 고차원의 배열을 손쉽게 만드록 조작할 수 있는 간편한 도구
+
+### 무작위로 훈련 세트 설정 한 뒤 테스트 하기
+
++ step 1. 도미와 빙어의 데이터를 합쳐서 준비하고 필요한 라이브러리 불러오기
+  ```python
+  #http://bit.ly/bream_smelt에서 데이터 가져오기 (fish_length, fish_weight라고 함)
+  fish_data = [[l,w] for l,w in zip(fish_length, fish_weight)
+  fish_target=[1] * 35 + [0] * 14
+
+  import numpy as np
+  from sklearn.neighbors import KNeighborsClassifier
+
+  input_arr=np.array(fish_data)
+  target_arr=np.array(fish_target)
+  ```
+  + input_arr는 넘파이의 2차원 배열임
++ step 2. 랜덤하게 샘플을 선택해 훈련 세트와 테스트 세트 만들기
+  ```python
+  np.random.seed(42)
+  index=np.arange(49) #index는 0부터 48까지 차례대로 생성되는 값을 가짐
+  np.random.shuffle(index) #shuffle은 주어진 배열을 무작위로 섞는다.(섞인 값이 index에 저장됨)
+  ```
+  + input_arr, target_arr에서 같은 위치는 함께 선택되어야함
+  + 일정한 결과를 얻으려면 초기에 랜덤 시드(random seed)를 지정하기, seed 값에 따라 다른 값이 출력되지만 같은 seed값이라면 동일한 값을 출력함
+
++ step 3. 훈련세트와 테스트 세트를 나누기
+  ```python
+  train_input=input_arr[index[:35]] 
+  train_target=target_arr[index[:35]]
+  test_input=input_arr[index[35:]]
+  test_target=target_arr[index[35:]]
+  ```
+  + 랜덤으로 섞인 index값에 따라 input_arr의 값이 train_input에 저장됨
+  + index의 첫 번째 원소가 13이라서 input_arr의 14번째 원소와 train_input의 1번째 원소의 값이 동일
+
++ step 4. 잘 섞였는지 산점도로 알아보기
+  ```python
+  import matplotlib.pyplot as plt
+  plt.scatter(train_input[:,0], train_input[:,1]) #[:,0]은 0번째 열의 모든 행을 의미; 즉, fish_length를 의미
+  plt.scatter(test_input[:,0], test_input[:,1]) #[:,1]은 1번째 열의 모든 행을 의미; 즉, fish_weight를 의미
+  plt.xlabel('length')
+  plt.ylabel('weight')
+  plt.show()
+  ```
+  ![스크린샷 2024-07-29 170439](https://github.com/user-attachments/assets/66313e8e-8838-4412-a8aa-a7078a59e3a2)
+    + 파란색이 훈련세트, 주황색이 테스트 세트
+
++ step 5. 훈련시키고 테스트해보기
+  ```python
+  kn = kn.fit(train_input, train_target)
+  kn.score(test_input, test_target)
+  ```
+  + 100%의 정확도가 나온다.
+
+## 02-02
+### 들어가기
+
+**데이터 전처리**란 알고리즘들은 샘플 간의 거리에 영향을 많이 받으므로 제대로 사용하려면 특성값을 일정한 기준으로 맞추는 것
+
+**표준 점수**란 각 특성 값이 0에서 표준 편차의 몇 배만큼 떨어져 있는지를 나타냄  (실제 특성값의 크기와 상관없이 동일한 조건으로 비교 가능)
+
+**브로드 캐스팅**이란 넘파이는 train_input의 모든 행에서 mean에 있는 두 평균값을 빼줌 그다음 std에 있는 두 표준편차를 다시 모든 행에 적용하는 것
+![KakaoTalk_20240729_190552681](https://github.com/user-attachments/assets/796d0684-7294-499a-b22e-a1a7c2d02067)
+
+대부분의 머신러닝 알고리즘은 특성의 **스케일**이 다르면 잘 작동하지 않음
+
+### 실습하기
++ step 1. 넘파이로 데이터 준비하기
+  ```python
+   #http://bit.ly/bream_smelt에서 데이터 가져오기 (fish_length, fish_weight라고 함)
+   import numpy as np
+   fish_data = np.column_stack((fish_length, fish_weight))
+  
+   fish_target = np.concatenate((np.ones(35), np.zeros(14)))
+  ```
+  + **column_stack()** 함수는 전달받은 리스트를 일렬로 세운 다음 차레대로 나란히 연결
+  + 넘파이 배열을 출력하면 리스트처럼 한 줄로 길게 출력되지 않고 행과 열을 맞추어 가지런히 정리된 모습
+  + **concatenate()** 함수는 첫 번째 차원을 따라 배열을 연결해줌
+
++ step 2. 사이킷런으로 훈련 세트와 테스트 세트 나누기
+  ```python
+  from sklearn.model_selection import train_test_split
+  train_input, test_input, train_target, test_target = train_test_split(fish_data, fish_target, stratify=fish_target, random_state=42)
+  ```
+  + **train_test_split()** 은 리스트나 배열을 비율에 맞게 훈련 세트와 테스트 세트로 나누어줌
+  + 나누고 싶은 리스트나 배열을 원하는 만큼 전달
+  + 자체적으로 랜덤 시드를 지정할 수 있는 **random_state** 매개변수가 있음
+  + fish_data와 fish_target 2개의 배열을 전달했으므로 2개씩 나뉘어 총 4개의 배열이 반환
+  + 기본적으로 25%를 테스트 세트로 떼어냄(현재 13개 정도)
+  + **stratify** 매개변수에 타깃 데이터를 전달하면 클래스 비율에 맞게 데이터를 나눔
+  + 훈련 데이터가 작거나 특정 클래스의 샘플 개수가 적을 때 유용
+
++ step 3. 데이터 전처리하기 전의 모습 보기
+  ```python
+  from sklearn.neighbors import KNeighborsClassifier
+  kn = KNeighborsClassifier()
+  kn.fit(train_input, train_target)
+  kn.score(test_input, test_target)
+  ```
+  ```python
+  distances, indexes = kn.kneighbors([[25,150]])
+  plt.scatter(train_input[:,0], train_input[:,1])
+  plt.scatter(25,150, marker='^')
+  plt.scatter(train_input[indexes, 0], train_input[indexes,1], marker='D')
+  plt.xlabel('length')
+  plt.ylabel('weight')
+  plt.show()
+  ```
+  ![스크린샷 2024-07-29 192357](https://github.com/user-attachments/assets/03b6d164-5f80-47e5-9b58-1264176eafcd)
+  + kneighbors()메서드는 주어진 샘플에서 가장 가까운 이웃을 찾아줌
+    + 이웃까지의 거리와 이웃 샘플의 인덱스를 반환
+  + marker 매개변수는 모양을 지정
+  + 삼각형 샘플에 가장 가까운 5개의 샘플이 초록 다이아몬드로 표시
+    + indexes가 삼각형 샘플에서 가까운 5개의 샘플의 인덱스를 포함; 이를 통해plt.scatter(train_input[indexes, 0], train_input[indexes,1], marker='D')로 가까운 5개를 표시
+  + 삼각형 샘플이 육안 상 도미에 가깝지만 빙어로 판단
+
+
++ step 4. 데이터 전처리 하기
+  + 두 특성(길이, 무게)의 값이 놓인 범위가 매우 다름; 이를 두 특성의 **스케일**이 다르다고 함
+  ```python
+  mean = np.mean(train_input, axis=0) #axis=0은 각 열의 모든 행을 사용함
+  std = np.std(train_input, axis=0)
+  train_scaled=(train_input - mean)/std #넘파이의 브로드 캐스팅 사용
+  ```
+  + np.mean()함수는 평균 계산
+  + np.std()함수는 표준편차를 계산
+
++ step 5. 전처리 데이터로 모델 훈련하기
+  + 예측할 샘플을 훈련 세트의 mean, std를 이용해서 변환해야 함
+  + 테스트 세트 또한 마찬가지로 훈련 세트의 mean, std를 이용해서 변환해야 함
+  ```python
+  kn.fit(train_scaled, train_target)
+  test_scaled = (test_input - mean) / std #테스트 세트의 스케일을 조정할 때도 훈련 세트의 통계 값을 사용하기
+  kn.score(test_scaled, test_target)
+  ```
+  ```python
+  plt.scatter(train_scaled[:,0], train_scaled[:,1])
+  plt.scatter(new[0], new[1], marker='^')
+  plt.scatter(train_scaled[indexes,0], train_scaled[indexes,1], marker='D') #샘플에서 가장 가까운 샘플은 모두 도미
+  plt.xlabel('length')
+  plt.ylabel('weight')
+  plt.show()
+  ``` 
+  + 정확도 100% 나옴
